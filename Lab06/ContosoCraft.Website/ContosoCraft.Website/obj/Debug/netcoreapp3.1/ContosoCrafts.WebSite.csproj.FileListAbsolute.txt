@@ -1,0 +1,6 @@
+C:\Users\User\source\repos\WebForm\Lab06\ContosoCraft.Website\ContosoCraft.Website\obj\Debug\netcoreapp3.1\ContosoCrafts.WebSite.AssemblyInfoInputs.cache
+C:\Users\User\source\repos\WebForm\Lab06\ContosoCraft.Website\ContosoCraft.Website\obj\Debug\netcoreapp3.1\ContosoCrafts.WebSite.AssemblyInfo.cs
+C:\Users\User\source\repos\WebForm\Lab06\ContosoCraft.Website\ContosoCraft.Website\obj\Debug\netcoreapp3.1\ContosoCrafts.WebSite.csproj.CoreCompileInputs.cache
+C:\Users\User\source\repos\WebForm\Lab06\ContosoCraft.Website\ContosoCraft.Website\obj\Debug\netcoreapp3.1\ContosoCrafts.WebSite.MvcApplicationPartsAssemblyInfo.cache
+C:\Users\User\source\repos\WebForm\Lab06\ContosoCraft.Website\ContosoCraft.Website\obj\Debug\netcoreapp3.1\ContosoCrafts.WebSite.RazorComponent.input.cache
+C:\Users\User\source\repos\WebForm\Lab06\ContosoCraft.Website\ContosoCraft.Website\obj\Debug\netcoreapp3.1\RazorDeclaration\Components\ProductList.razor.g.cs
