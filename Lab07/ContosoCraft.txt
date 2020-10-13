@@ -1,0 +1,356 @@
+===============ContosoCraft.Website==========
+---STEP BY STEP--
+1.Create project ASP.NET MVC Core
+1.Add folder "data",create "wwwwroot > data > products.json"
+2.Add folder Models,create "Models > Product.cs"
+3.Add folder Services,create "Services > JsonFileProductService.cs"
+4.Edit StartUp.cs => ConfigureServices
+services.AddTransient<JsonFileProductService>();
+5.Edit Index.cshtml.cs
+
+    public class IndexModel : PageModel
+    {
+        private readonly ILogger<IndexModel> _logger;
+
+	//*//
+        public JsonFileProductService ProductService;
+        public IEnumerable<Product> Products { get; private set; }
+	//*//
+
+
+        public IndexModel(ILogger<IndexModel> logger,
+            JsonFileProductService productService)
+        {
+            _logger = logger;
+	//*//
+           ProductService = productService;
+	//*//
+
+        }
+
+        public void OnGet()
+        {
+	//*//
+            Products = ProductService.GetProducts();
+	//*//
+        }
+    }
+
+6.Edit Index.cshtml
+
+@foreach(var product in Model.Products){
+	<h2>@product.Title</h2>
+}
+
+
+========RUN ROUTE["(controller)"] IN localhost===========
+------
+
+1.Add folder Controllers,create "Controllers > productsController.cs"
+2.Edit "productsController.cs"
+
+[Route("[controller]")]    ==> Name Controller
+    [ApiController]
+
+    public class ProductsController : ControllerBase
+    {
+        public ProductsController(JsonFileProductService productService)
+        {
+            this.ProductService = productService;
+        }
+
+        public JsonFileProductService ProductService { get; }
+
+        [HttpGet]
+        public IEnumerable<Product> Get()
+        {
+            return ProductService.GetProducts();
+        }
+    }
+
+3.Edit Startup.cs
+
+(+) public void ConfigureServices(IServiceCollection services)
+        {
+            services.AddRazorPages();
+
+	/**Edit**/
+            services.AddControllers();
+	/****/
+
+            services.AddTransient<JsonFileProductService>();
+        }
+
+
+(+) public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
+        {
+            if (env.IsDevelopment())
+            {
+                app.UseDeveloperExceptionPage();
+            }
+            else
+            {
+                app.UseExceptionHandler("/Error");
+                // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
+                app.UseHsts();
+            }
+
+            app.UseHttpsRedirection();
+            app.UseStaticFiles();
+
+            app.UseRouting();
+
+            app.UseAuthorization();
+
+            app.UseEndpoints(endpoints =>
+            {
+                endpoints.MapRazorPages();
+
+		/**Edit**/
+                endpoints.MapControllers();
+		/******/
+            });
+
+4.Add "Json Viewer" from Google;
+5.Run "https://localhost:44313/products";
+
+
+============RUN ROUTE("Rate") IN LOCALHOST=========
+------
+1.Edit file Startup.cs
+
+        [Route("Rate")]
+        [HttpGet]
+
+        public ActionResult Get([FromQuery]string productId,[FromQuery] int rating)
+        {
+            ProductService.AddRating(productId, rating);
+            return Ok();
+        }
+
+2.Add funtion "AddRating" in "JsonFileProductService.cs"
+
+        public void AddRating(string productId, int rating)
+        {
+            var products = GetProducts();
+
+            var query = products.First(x => x.Id == productId);
+
+            if (query.Ratings == null)
+            {
+                query.Ratings = new int[] { rating };
+            }
+            else
+            {
+                var ratings = query.Ratings.ToList();
+                ratings.Add(rating);
+                query.Ratings = ratings.ToArray();
+            }
+            using (var outputStream = File.OpenWrite(JsonFileName))
+            {
+                JsonSerializer.Serialize<IEnumerable<Product>>(
+                    new Utf8JsonWriter(outputStream, new JsonWriterOptions
+                    {
+                        SkipValidation = true,
+                        Indented = true
+                    }),
+                    products
+            );
+            }
+        }
+
+3.Run link: https://localhost:44313/products/rate?productId=jenlooper-cactus&rating=8
+4.Open file "products.json" check "rate"
+
+
+
+=========COMPONENT========
+-Desciption: Add button details
+------
+
+1.Add Folder "Components",Create "ProductList.razor" in this folder
+2.In  "ProductList.razor" :
+
+(+)	@using Microsoft.AspNetCore.Components.Web;
+	@using ContosoCraft.Website.Models;
+	@using ContosoCrafts.WebSite.Services;
+	@inject JsonFileProductService ProductService
+
+
+
+(+) <div class="card-columns">
+    @foreach (var product in ProductService.GetProducts())
+    {
+        <div class="card">
+            <div class="card-img" style="background-image: url('@product.Image');"></div>
+            <div class="card-body">
+                <h5 class="card-title">@product.Title</h5>
+            </div>
+        </div>
+        <div class="card-footer">
+            <small class="text-muted">
+                <button @onclick="(e => SelectProduct(product.Id))"
+                        data-toggle="modal" data-target="#productModal" class="btn btn-primary">
+                    More Infor
+                </button>
+            </small>
+        </div>
+    }
+   </div>
+
+(+)
+
+@code {
+    Product selectedProduct;
+    string selectedProductId;
+
+    void SelectProduct(string productId)
+    {
+        selectedProductId = productId;
+        selectedProduct = ProductService.GetProducts().First(x => x.Id == productId);
+    }
+}
+
+3.Edit index.cshtml
+
+@page
+@using ContosoCraft.Website.Components
+@model IndexModel
+@{
+    ViewData["Title"] = "Home page";
+}
+
+<div class="text-center">
+    <h1 class="display-4">Contoso Crafts</h1>
+    <p>Learn about <a href="https://docs.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+</div>
+
+
+@(await Html.RenderComponentAsync<ProductList>(RenderMode.ServerPrerendered))=> ADD COMPONENT productsList.Razor
+
+<script src="_framework/blazor.server.js"></script> => REACT
+
+
+4.Edit ConfigureServices from Startup.cs
+
+(+) public void ConfigureServices(IServiceCollection services)
+        {
+            services.AddRazorPages();
+            services.AddServerSideBlazor();
+            services.AddControllers();
+            services.AddTransient<JsonFileProductService>();
+        }
+
+(+) app.UseEndpoints(endpoints =>
+            {
+                endpoints.MapRazorPages();
+                endpoints.MapControllers();
+                endpoints.MapBlazorHub();
+
+            });
+============ADD THE PRICE FOR THE BUTTON=======
+******
+1.In "ProductList.ranzor" we add this code:
+
+
+@if (selectedProduct != null) ===> "selectedProduct" is variable from @code{} in file "ProductList.ranzor";
+{
+    <div class="modal fade" id="productModal" tabindex="-1" role="dialog" aria-labelledby="productTitle" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="productTitle">@selectedProduct.Title</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="card">
+                        <div class="card-img" style="background-image: url('@selectedProduct.Image');">
+                        </div>
+                        <div class="card-body">
+                            <p class="card-text">@selectedProduct.Description</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                   
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+2.Debug
+
+==============VOTE STAR FOR THE PRODUCT=========
+******
+
+1.In @code{} we will add
+
+    int currentRating = 0;
+    int voteCount = 0;
+    string voteLabel;
+
+    void GetCurrentRating()
+    {
+        if(selectedProduct.Ratings == null)
+        {
+            currentRating = 0;
+            voteCount = 0;
+        }
+        else
+        {
+            voteCount = selectedProduct.Ratings.Count();
+            voteLabel = voteCount > 1 ? "Votes" : "Vote";
+
+            currentRating = selectedProduct.Ratings.Sum() / voteCount;
+        }
+
+        System.Console.WriteLine($"Current rating for {selectedProduct.Id}: {currentRating}");
+    }
+
+    void SubmitRating(int rating)
+    {
+        System.Console.WriteLine($"Ratig revived for {selectedProduct.Id}: {rating}");
+        ProductService.AddRating(selectedProductId, rating);
+        SelectProduct(selectedProductId);
+    }
+
+2.Add function GetCurrentRating(); in function "SelectProduct" created above
+
+void SelectProduct(string productId)
+    {
+        selectedProductId = productId;
+        selectedProduct = ProductService.GetProducts().First(x => x.Id == productId);
+
+        //Add//
+	GetCurrentRating();
+	//
+
+    }
+
+.In class "modal-footer" we add:
+
+  @if (voteCount == 0)
+                    {
+                        <span>Be the first to vote</span>
+                    }
+                    else
+                    {
+                        <span>@voteCount @voteLabel</span>
+                    }
+
+                    @for (int i = 0; i < 6; i++)
+                    {
+                        var currentStart = i;
+                        if (i <= currentRating)
+                        {
+                            <span class="fa fa-star checked"  @onclick="(e => SubmitRating(currentStart))"></span>
+                        }
+                        else
+                        {
+                            <span  class="fa fa-star" @onclick="(e => SubmitRating(currentStart))"></span>
+                        }
+                    }
+3.Run
